@@ -65,7 +65,7 @@ app.post('/api/speech-result', (req, res) => {
     // هنا سنقوم لاحقاً بربط النص بـ ChatGPT للرد عليه
     res.status(200).json([
         {
-            "verb": "play",
+            "verb": "say",
             "text": "سمعتك بوضوح. جاري معالجة الطلب في الخلفية.",
             "synthesizer": { "vendor": "google", "language": "ar-SA" }
         },
