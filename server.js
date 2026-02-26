@@ -7,7 +7,7 @@ app.use(express.json());
 
 // إعداد Gemini
 const genAI = new GoogleGenerativeAI(process.env.AIzaSyBneW7GjNxujkA5wEvm-1EzzmGbv2AeVVM);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-preview" });
 
 app.get('/', (req, res) => res.send('🚀 AI Server is Live!'));
 
