@@ -7,7 +7,8 @@ app.use(express.json());
 
 // إعداد Gemini - الترقية لنسخة Pro
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); 
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" }); // تم التغيير لنموذج Pro
+
 app.get('/', (req, res) => res.send('🚀 AI Voice Server is Live (Pro Version)!'));
 
 app.post('/api/incoming', async (req, res) => {
