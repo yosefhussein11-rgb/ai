@@ -1,15 +1,14 @@
 const express = require('express');
-const { GoogleGenerativeAI } = require("@google/generative-ai"); // المكتبة القياسية والمستقرة
+const { GoogleGenAI } = require("@google/genai"); // المكتبة الجديدة بناءً على رابط جوجل
 require('dotenv').config();
 
 const app = express();
 app.use(express.json());
 
-// إعداد Gemini - الترقية لنسخة Pro
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" }); // تم التغيير لنموذج Pro
+// الإعداد بالطريقة الصحيحة والجديدة (سيقوم تلقائياً بقراءة GEMINI_API_KEY من Render)
+const ai = new GoogleGenAI({});
 
-app.get('/', (req, res) => res.send('🚀 AI Voice Server is Live (Pro Version)!'));
+app.get('/', (req, res) => res.send('🚀 AI Voice Server is Live (Free Gemini Flash)!'));
 
 app.post('/api/incoming', async (req, res) => {
     const jambonzResponse = [
@@ -29,8 +28,9 @@ app.post('/api/incoming', async (req, res) => {
 });
 
 app.post('/api/respond', async (req, res) => {
-    // 1. حماية النظام: التحقق مما إذا كان العميل قد تحدث فعلاً أم كان صامتاً
     const speechData = req.body.speech;
+    
+    // حماية ضد الصمت (إذا لم يقل العميل شيئاً)
     if (!speechData || !speechData.alternatives || speechData.alternatives.length === 0) {
         return res.status(200).json([
             { "verb": "say", "text": "عذراً، لم أسمعك جيداً. هل يمكنك إعادة ما قلت؟", "language": "ar-SA" },
@@ -42,14 +42,17 @@ app.post('/api/respond', async (req, res) => {
     console.log("🗣️ Customer said:", customerText);
 
     try {
-        // 2. إرسال النص لـ Gemini Pro
         const prompt = `أنت موظف استقبال في مطعم سعودي. رد باختصار شديد جداً (لا يزيد عن 15 كلمة) وبلطافة على كلام العميل التالي: "${customerText}"`;
-        const result = await model.generateContent(prompt);
-        const aiResponse = result.response.text();
         
+        // استخدام النموذج المجاني (Flash) بالطريقة المكتوبة في موقع Google Quickstart
+        const response = await ai.models.generateContent({
+            model: 'gemini-1.5-flash',
+            contents: prompt,
+        });
+        
+        const aiResponse = response.text;
         console.log("🧠 AI Responded:", aiResponse);
 
-        // 3. إرسال الرد الصوتي للعميل
         const jambonzResponse = [
             {
                 "verb": "say",
