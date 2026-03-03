@@ -30,7 +30,6 @@ app.post('/api/incoming', async (req, res) => {
         {
             "verb": "say",
             "text": "أهلاً بك، كيف يمكنني مساعدتك؟",
-            "language": "ar-SA"
         },
         {
             "verb": "gather",
