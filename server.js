@@ -1,12 +1,14 @@
 const express = require('express');
-const { GoogleGenAI } = require("@google/generative-ai"); // تصحيح اسم المكتبة
+// تم تصحيح اسم الفئة المستدعاة هنا 👇
+const { GoogleGenerativeAI } = require("@google/generative-ai"); 
 require('dotenv').config();
 
 const app = express();
 app.use(express.json());
 
 // تأكد من إضافة GEMINI_API_KEY في إعدادات Render (Environment Variables)
-const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY);
+// تم تصحيح اسم الفئة هنا أيضاً 👇
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const aiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 const audioStore = new Map();
@@ -85,6 +87,8 @@ app.post('/api/respond', async (req, res) => {
         const audioBuffer = Buffer.from(await nabrahResponse.arrayBuffer());
         const audioId = Date.now().toString();
         audioStore.set(audioId, audioBuffer);
+        
+        // حذف الملف الصوتي من الذاكرة بعد دقيقتين لمنع تسرب الذاكرة (Memory Leak)
         setTimeout(() => audioStore.delete(audioId), 120000);
 
         const host = req.get('host');
