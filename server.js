@@ -26,16 +26,20 @@ app.get('/api/audio/:id', (req, res) => {
 
 app.post('/api/incoming', async (req, res) => {
     const jambonzResponse = [
-        // رسالة الترحيب الأولى (تمت إزالة خاصية language لتجنب خطأ Jambonz)
+        // استخدام play بدلاً من say لتجنب مشاكل Google و Deepgram تماماً!
         {
-            "verb": "say",
-            "text": "أهلاً بك، كيف يمكنني مساعدتك؟"
+            "verb": "play",
+            "url": "https://cdn.pixabay.com/audio/2024/08/21/audio_f8edbfa61f.mp3" // هذا رابط صوت تجريبي (رنة قصيرة)، يمكنك تغييره لاحقاً برابط لرسالة مسجلة
         },
         {
             "verb": "gather",
             "input": ["speech"],
             "actionHook": "/api/respond",
-            "timeout": 5
+            "timeout": 5,
+            "recognizer": {
+                "vendor": "deepgram",
+                "language": "ar"
+            }
         }
     ];
     res.status(200).json(jambonzResponse);
