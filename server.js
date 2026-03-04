@@ -35,7 +35,7 @@ app.post('/api/incoming', async (req, res) => {
             "verb": "gather",
             "input": ["speech"],
             "actionHook": "/api/respond",
-            "timeout": 5
+            "timeout": 10
         }
     ];
     res.status(200).json(jambonzResponse);
