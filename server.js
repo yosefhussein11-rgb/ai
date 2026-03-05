@@ -98,7 +98,7 @@ app.post('/api/respond', async (req, res) => {
 بناءً على التعليمات، ماذا ستقول له؟`;
         
         const response = await ai.models.generateContent({
-            model: 'gemini-1.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: prompt,
         });
         const aiTextResponse = response.text;
