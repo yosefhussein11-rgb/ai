@@ -30,7 +30,7 @@ app.post('/api/incoming', async (req, res) => {
         // استبدلنا say بـ play مع صوت مؤقت لمنع انهيار Jambonz بسبب إعدادات Google TTS
         {
             "verb": "play",
-            "url": "public" 
+            "url": "https://www.w3schools.com/html/horse.mp3" 
         },
         {
             "verb": "gather",
