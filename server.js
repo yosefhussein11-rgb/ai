@@ -86,7 +86,7 @@ app.post('/api/respond', async (req, res) => {
         
         // 👈 تم تعديل الموديل هنا إلى الموديل الصحيح المدعوم حالياً
         const response = await ai.models.generateContent({
-            model: 'gemini-2.0-flash',
+            model:'gemini-1.5-flash',
             contents: prompt,
         });
         const aiTextResponse = response.text;
