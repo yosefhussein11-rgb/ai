@@ -5,6 +5,9 @@ require('dotenv').config();
 const app = express();
 app.use(express.json());
 
+// 👈 السطر الجديد: السماح للسيرفر بقراءة الملفات من مجلد public
+app.use(express.static('public'));
+
 // جيميناي سيتعرف على المفتاح تلقائياً من إعدادات Render
 const ai = new GoogleGenAI({});
 
@@ -30,7 +33,7 @@ app.post('/api/incoming', async (req, res) => {
         // استبدلنا say بـ play مع صوت مؤقت لمنع انهيار Jambonz بسبب إعدادات Google TTS
         {
             "verb": "play",
-            "url": "https://www.w3schools.com/html/horse.mp3" 
+            "url": audioUrl
         },
         {
             "verb": "gather",
@@ -56,7 +59,7 @@ app.post('/api/respond', async (req, res) => {
     // حماية ضد الصمت
     if (!speechData || !speechData.alternatives || speechData.alternatives.length === 0) {
         return res.status(200).json([
-            { "verb": "play", "url": "https://cdn.pixabay.com/audio/2022/03/15/audio_783ca1e754.mp3" },
+            { "verb": "play", "url": "htts-output.mp3" },
             { "verb": "gather", "input": ["speech"], "actionHook": "/api/respond", "timeout": 5, "recognizer": defaultRecognizer }
         ]);
     }
