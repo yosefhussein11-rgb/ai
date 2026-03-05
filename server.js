@@ -1,22 +1,28 @@
 const express = require('express');
 const { GoogleGenAI } = require("@google/genai");
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
 app.use(express.json());
 
-// 👈 السطر الجديد: السماح للسيرفر بقراءة الملفات من مجلد public
+// السماح للسيرفر بقراءة الملفات من مجلد public
 app.use(express.static('public'));
 
-// جيميناي سيتعرف على المفتاح تلقائياً من إعدادات Render
+// مسار إضافي للطوارئ: في حال نسيان الملف خارج مجلد public
+app.get('/tts-output.mp3', (req, res) => {
+    res.sendFile(path.join(__dirname, 'tts-output.mp3'));
+});
+
+// جيميناي
 const ai = new GoogleGenAI({});
 
-// "محطة الإذاعة": ذاكرة مؤقتة لحفظ الملفات الصوتية القادمة من نبرة
+// ذاكرة الصوت المؤقتة
 const audioStore = new Map();
 
 app.get('/', (req, res) => res.send('🚀 AI Voice Server with Nabrah is Live!'));
 
-// مسار (رابط) مخصص لـ Jambonz لكي يسحب منه الملف الصوتي
+// مسار سحب الصوت لنبرة
 app.get('/api/audio/:id', (req, res) => {
     const id = req.params.id;
     if (audioStore.has(id)) {
@@ -29,18 +35,21 @@ app.get('/api/audio/:id', (req, res) => {
 });
 
 app.post('/api/incoming', async (req, res) => {
+    // 👈 هنا قمنا بإصلاح الخطأ: تعريف الرابط الخاص بملف الترحيب الخاص بك
+    const host = req.get('host');
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol; 
+    const welcomeAudioUrl = `${protocol}://${host}/tts-output.mp3`;
+
     const jambonzResponse = [
-        // استبدلنا say بـ play مع صوت مؤقت لمنع انهيار Jambonz بسبب إعدادات Google TTS
         {
             "verb": "play",
-            "url": audioUrl
+            "url": welcomeAudioUrl // 👈 الآن المتغير معرف ويعمل بشكل سليم
         },
         {
             "verb": "gather",
             "input": ["speech"],
             "actionHook": "/api/respond",
             "timeout": 10,
-            // 👈 يجب تحديد ديبجرام هنا لكي يفهم الصوت العربي بشكل صحيح
             "recognizer": {
                 "vendor": "deepgram",
                 "language": "ar"
@@ -52,14 +61,16 @@ app.post('/api/incoming', async (req, res) => {
 
 app.post('/api/respond', async (req, res) => {
     const speechData = req.body.speech;
-    
-    // تعريف ديبجرام الموحد
     const defaultRecognizer = { "vendor": "deepgram", "language": "ar" };
 
-    // حماية ضد الصمت
+    const host = req.get('host');
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol; 
+    const welcomeAudioUrl = `${protocol}://${host}/tts-output.mp3`;
+
+    // حماية ضد الصمت (تم إصلاح الخطأ الإملائي هنا)
     if (!speechData || !speechData.alternatives || speechData.alternatives.length === 0) {
         return res.status(200).json([
-            { "verb": "play", "url": "htts-output.mp3" },
+            { "verb": "play", "url": welcomeAudioUrl },
             { "verb": "gather", "input": ["speech"], "actionHook": "/api/respond", "timeout": 5, "recognizer": defaultRecognizer }
         ]);
     }
@@ -68,8 +79,7 @@ app.post('/api/respond', async (req, res) => {
     console.log("🗣️ Customer said:", customerText);
 
     try {
-        // 1. العقل (جيميناي يكتب الرد)
-       const prompt = `أنت موظف كاشير واستقبال سعودي ذكي ولطيف في مطعم اسمه "شاورما المعلم".
+        const prompt = `أنت موظف كاشير واستقبال سعودي ذكي ولطيف في مطعم اسمه "شاورما المعلم".
 
 قائمة الطعام (المنيو) والأسعار:
 - شاورما دجاج (عادي): 10 ريال
@@ -87,15 +97,13 @@ app.post('/api/respond', async (req, res) => {
 العميل يقول لك الآن: "${customerText}"
 بناءً على التعليمات، ماذا ستقول له؟`;
         
-        // 👈 تم تعديل الموديل هنا إلى الموديل الصحيح المدعوم حالياً
         const response = await ai.models.generateContent({
-            model:'gemini-1.5-flash',
+            model: 'gemini-1.5-flash',
             contents: prompt,
         });
         const aiTextResponse = response.text;
         console.log("🧠 AI Text:", aiTextResponse);
 
-        // 2. الحنجرة (إرسال النص إلى منصة نبرة)
         const nabrahResponse = await fetch('https://api.nabrah.ai/api/ext/tts/generations', {
             method: 'POST',
             headers: {
@@ -105,7 +113,7 @@ app.post('/api/respond', async (req, res) => {
             body: JSON.stringify({
                 model: "nabrah-tts",
                 input: aiTextResponse,
-                voice: "87f4c7b0-d9b5-45aa-8c6c-9e2ccf941912", // 👈 الـ ID للصوت الخاص بك
+                voice: "87f4c7b0-d9b5-45aa-8c6c-9e2ccf941912",
                 response_format: "mp3",
                 speed: 1.0
             })
@@ -115,27 +123,20 @@ app.post('/api/respond', async (req, res) => {
             throw new Error(`Nabrah API Error: ${nabrahResponse.status}`);
         }
 
-        // 3. محطة الإذاعة (تحويل الصوت وتجهيز الرابط لـ Jambonz)
         const arrayBuffer = await nabrahResponse.arrayBuffer();
         const audioBuffer = Buffer.from(arrayBuffer);
-        const audioId = Date.now().toString(); // إنشاء رقم سري للملف
+        const audioId = Date.now().toString(); 
         
-        audioStore.set(audioId, audioBuffer); // حفظ الملف في الذاكرة
-        
-        // مسح الملف من الذاكرة بعد دقيقتين لمنع امتلاء مساحة السيرفر
+        audioStore.set(audioId, audioBuffer); 
         setTimeout(() => audioStore.delete(audioId), 120000);
 
-        // إنشاء الرابط الذي سيزوره Jambonz
-        const host = req.get('host');
-        const protocol = req.headers['x-forwarded-proto'] || req.protocol; // لمعرفة هل الرابط http أو https
         const audioUrl = `${protocol}://${host}/api/audio/${audioId}`;
 
         console.log("🔊 Audio generated, sending to Jambonz...");
 
-        // 4. إرسال الرابط لـ Jambonz ليتحدث بصوت نبرة
         const jambonzResponse = [
             {
-                "verb": "play", // نستخدم play بدلاً من say
+                "verb": "play",
                 "url": audioUrl
             },
             {
@@ -143,7 +144,7 @@ app.post('/api/respond', async (req, res) => {
                 "input": ["speech"],
                 "actionHook": "/api/respond",
                 "timeout": 5,
-                "recognizer": defaultRecognizer // 👈 أضفناها هنا أيضاً
+                "recognizer": defaultRecognizer 
             }
         ];
         res.status(200).json(jambonzResponse);
