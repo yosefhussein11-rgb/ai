@@ -1,5 +1,4 @@
 const express = require('express');
-const { GoogleGenAI } = require("@google/genai");
 const path = require('path');
 require('dotenv').config();
 
@@ -14,13 +13,10 @@ app.get('/tts-output.mp3', (req, res) => {
     res.sendFile(path.join(__dirname, 'tts-output.mp3'));
 });
 
-// جيميناي
-const ai = new GoogleGenAI({});
-
 // ذاكرة الصوت المؤقتة
 const audioStore = new Map();
 
-app.get('/', (req, res) => res.send('🚀 AI Voice Server with Nabrah is Live!'));
+app.get('/', (req, res) => res.send('🚀 AI Voice Server with OpenRouter & Nabrah is Live!'));
 
 // مسار سحب الصوت لنبرة
 app.get('/api/audio/:id', (req, res) => {
@@ -35,7 +31,6 @@ app.get('/api/audio/:id', (req, res) => {
 });
 
 app.post('/api/incoming', async (req, res) => {
-    // 👈 هنا قمنا بإصلاح الخطأ: تعريف الرابط الخاص بملف الترحيب الخاص بك
     const host = req.get('host');
     const protocol = req.headers['x-forwarded-proto'] || req.protocol; 
     const welcomeAudioUrl = `${protocol}://${host}/tts-output.mp3`;
@@ -43,7 +38,7 @@ app.post('/api/incoming', async (req, res) => {
     const jambonzResponse = [
         {
             "verb": "play",
-            "url": welcomeAudioUrl // 👈 الآن المتغير معرف ويعمل بشكل سليم
+            "url": welcomeAudioUrl
         },
         {
             "verb": "gather",
@@ -67,7 +62,7 @@ app.post('/api/respond', async (req, res) => {
     const protocol = req.headers['x-forwarded-proto'] || req.protocol; 
     const welcomeAudioUrl = `${protocol}://${host}/tts-output.mp3`;
 
-    // حماية ضد الصمت (تم إصلاح الخطأ الإملائي هنا)
+    // حماية ضد الصمت
     if (!speechData || !speechData.alternatives || speechData.alternatives.length === 0) {
         return res.status(200).json([
             { "verb": "play", "url": welcomeAudioUrl },
@@ -79,7 +74,7 @@ app.post('/api/respond', async (req, res) => {
     console.log("🗣️ Customer said:", customerText);
 
     try {
-        const prompt = `أنت موظف كاشير واستقبال سعودي ذكي ولطيف في مطعم اسمه "شاورما المعلم".
+        const systemPrompt = `أنت موظف كاشير واستقبال سعودي ذكي ولطيف في مطعم اسمه "شاورما المعلم".
 
 قائمة الطعام (المنيو) والأسعار:
 - شاورما دجاج (عادي): 10 ريال
@@ -88,22 +83,37 @@ app.post('/api/respond', async (req, res) => {
 - بطاطس مقلي: 5 ريال
 - مشروب غازي (بيبسي/سفن): 4 ريال
 
-تعليماتك الصارمة (يجب الالتزام بها حرفياً):
-1. الرد القصير: يجب أن يكون ردك مختصراً جداً جداً (لا تزيد عن 15 إلى 20 كلمة) لأن هذه مكالمة هاتفية، والناس لا تحب الانتظار.
-2. اللهجة: تحدث بلهجة سعودية بيضاء محترمة ومرحبة (استخدم كلمات مثل: سم، أبشر، طال عمرك، حياك الله).
-3. الالتزام بالمنيو: إذا طلب العميل شيئاً غير موجود في القائمة، اعتذر منه بلطف وأخبره بأبرز ما لدينا.
-4. تأكيد الطلب: عندما يختار العميل، أكد له الطلب واحسب له السعر الإجمالي بشكل سريع.
-
-العميل يقول لك الآن: "${customerText}"
-بناءً على التعليمات، ماذا ستقول له؟`;
+تعليماتك الصارمة:
+1. الرد القصير: يجب أن يكون ردك مختصراً جداً (لا تزيد عن 15 إلى 20 كلمة) لأن هذه مكالمة هاتفية.
+2. اللهجة: تحدث بلهجة سعودية محترمة (استخدم: سم، أبشر، طال عمرك).
+3. الالتزام بالمنيو: إذا طلب العميل شيئاً غير موجود، اعتذر بلطف.
+4. تأكيد الطلب: أكد الطلب واحسب السعر الإجمالي بشكل سريع.`;
         
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview', // ✅ الموديل الجديد والصحيح
-            contents: prompt,
+        // 1. العقل (استخدام OpenRouter بدلاً من جيميناي)
+        const openRouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                "model": "meta-llama/llama-3.2-3b-instruct:free",
+                "messages": [
+                    { "role": "system", "content": systemPrompt },
+                    { "role": "user", "content": customerText }
+                ]
+            })
         });
-        const aiTextResponse = response.text;
-        console.log("🧠 AI Text:", aiTextResponse);
 
+        if (!openRouterResponse.ok) {
+            throw new Error(`OpenRouter API Error: ${openRouterResponse.status}`);
+        }
+
+        const openRouterData = await openRouterResponse.json();
+        const aiTextResponse = openRouterData.choices[0].message.content;
+        console.log("🧠 AI Text (Meta LLaMA):", aiTextResponse);
+
+        // 2. الحنجرة (إرسال النص إلى منصة نبرة)
         const nabrahResponse = await fetch('https://api.nabrah.ai/api/ext/tts/generations', {
             method: 'POST',
             headers: {
@@ -123,6 +133,7 @@ app.post('/api/respond', async (req, res) => {
             throw new Error(`Nabrah API Error: ${nabrahResponse.status}`);
         }
 
+        // 3. محطة الإذاعة (تجهيز الصوت)
         const arrayBuffer = await nabrahResponse.arrayBuffer();
         const audioBuffer = Buffer.from(arrayBuffer);
         const audioId = Date.now().toString(); 
@@ -131,9 +142,9 @@ app.post('/api/respond', async (req, res) => {
         setTimeout(() => audioStore.delete(audioId), 120000);
 
         const audioUrl = `${protocol}://${host}/api/audio/${audioId}`;
-
         console.log("🔊 Audio generated, sending to Jambonz...");
 
+        // 4. إرسال الرابط لـ Jambonz
         const jambonzResponse = [
             {
                 "verb": "play",
