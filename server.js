@@ -16,7 +16,7 @@ app.get('/tts-output.mp3', (req, res) => {
 // ذاكرة الصوت المؤقتة
 const audioStore = new Map();
 
-app.get('/', (req, res) => res.send('🚀 AI Voice Server with OpenRouter & Nabrah is Live!'));
+app.get('/', (req, res) => res.send('🚀 AI Voice Server with OpenRouter (GPT-4o-mini) & Nabrah is Live!'));
 
 // مسار سحب الصوت لنبرة
 app.get('/api/audio/:id', (req, res) => {
@@ -89,7 +89,7 @@ app.post('/api/respond', async (req, res) => {
 3. الالتزام بالمنيو: إذا طلب العميل شيئاً غير موجود، اعتذر بلطف.
 4. تأكيد الطلب: أكد الطلب واحسب السعر الإجمالي بشكل سريع.`;
         
-        // 1. العقل (استخدام OpenRouter بدلاً من جيميناي)
+        // 1. العقل (استخدام OpenRouter مع نموذج GPT-4o-mini)
         const openRouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: "POST",
             headers: {
@@ -97,7 +97,7 @@ app.post('/api/respond', async (req, res) => {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "model": "meta-llama/llama-3.2-3b-instruct:free",
+                "model": "openai/gpt-4o-mini", // تم التحديث إلى النموذج المطلوب
                 "messages": [
                     { "role": "system", "content": systemPrompt },
                     { "role": "user", "content": customerText }
@@ -111,7 +111,7 @@ app.post('/api/respond', async (req, res) => {
 
         const openRouterData = await openRouterResponse.json();
         const aiTextResponse = openRouterData.choices[0].message.content;
-        console.log("🧠 AI Text (Meta LLaMA):", aiTextResponse);
+        console.log("🧠 AI Text (GPT-4o-mini):", aiTextResponse);
 
         // 2. الحنجرة (إرسال النص إلى منصة نبرة)
         const nabrahResponse = await fetch('https://api.nabrah.ai/api/ext/tts/generations', {
