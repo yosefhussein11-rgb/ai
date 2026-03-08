@@ -123,7 +123,7 @@ app.post('/api/respond', async (req, res) => {
             body: JSON.stringify({
                 model: "nabrah-tts",
                 input: aiTextResponse,
-                voice: "c6f5028b-0f50-4fe2-a743-8d2f2f4b1b1f",
+                voice: "019babf2-c05f-732d-a080-e120c0491305",
                 response_format: "mp3",
                 speed: 1.0
             })
