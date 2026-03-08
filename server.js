@@ -124,7 +124,7 @@ app.post('/api/respond', async (req, res) => {
                 model: "nabrah-tts", // إذا كان الخطأ هنا، سيخبرنا السجل الجديد بذلك
                 input: aiTextResponse,
                 voice: "019babf2-c05f-732d-a080-e120c0491305",
-                response_format: "mp3"
+                response_format: "wav"
                 // تم إزالة السرعة (speed) مؤقتاً لتجنب أخطاء التنسيق
             })
         });
