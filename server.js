@@ -97,7 +97,7 @@ app.post('/api/respond', async (req, res) => {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "model": "openai/gpt-4o-mini", // تم التحديث إلى النموذج المطلوب
+                "model": "openai/gpt-4o-mini",
                 "messages": [
                     { "role": "system", "content": systemPrompt },
                     { "role": "user", "content": customerText }
@@ -121,16 +121,19 @@ app.post('/api/respond', async (req, res) => {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: "nabrah-tts",
+                model: "nabrah-tts", // إذا كان الخطأ هنا، سيخبرنا السجل الجديد بذلك
                 input: aiTextResponse,
                 voice: "019babf2-c05f-732d-a080-e120c0491305",
-                response_format: "mp3",
-                speed: 1.0
+                response_format: "mp3"
+                // تم إزالة السرعة (speed) مؤقتاً لتجنب أخطاء التنسيق
             })
         });
 
+        // ⭐ التعديل الأهم: التقاط رسالة الخطأ الحقيقية من نبرة وطباعتها ⭐
         if (!nabrahResponse.ok) {
-            throw new Error(`Nabrah API Error: ${nabrahResponse.status}`);
+            const errorDetails = await nabrahResponse.text();
+            console.error("🔴 تفاصيل خطأ نبرة (Nabrah Error Details):", errorDetails);
+            throw new Error(`Nabrah API Error: ${nabrahResponse.status} - ${errorDetails}`);
         }
 
         // 3. محطة الإذاعة (تجهيز الصوت)
@@ -161,7 +164,7 @@ app.post('/api/respond', async (req, res) => {
         res.status(200).json(jambonzResponse);
 
     } catch (error) {
-        console.error("❌ System Error:", error);
+        console.error("❌ System Error:", error.message);
         res.status(200).json([
             { "verb": "play", "url": "https://cdn.pixabay.com/audio/2022/03/10/audio_c3e382f763.mp3" },
             { "verb": "gather", "input": ["speech"], "actionHook": "/api/respond", "timeout": 5, "recognizer": defaultRecognizer }
