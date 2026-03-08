@@ -121,10 +121,10 @@ app.post('/api/respond', async (req, res) => {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: "nabrah-tts", // إذا كان الخطأ هنا، سيخبرنا السجل الجديد بذلك
+                model: "phantom_v1", // إذا كان الخطأ هنا، سيخبرنا السجل الجديد بذلك
                 input: aiTextResponse,
                 voice: "019babf2-c05f-732d-a080-e120c0491305",
-                response_format: "wav"
+                response_format: "mp3"
                 // تم إزالة السرعة (speed) مؤقتاً لتجنب أخطاء التنسيق
             })
         });
