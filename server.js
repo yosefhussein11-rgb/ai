@@ -113,29 +113,32 @@ app.post('/api/respond', async (req, res) => {
         const aiTextResponse = openRouterData.choices[0].message.content;
         console.log("🧠 AI Text (GPT-4o-mini):", aiTextResponse);
 
-        // 2. الحنجرة (إرسال النص إلى منصة نبرة)
-        const nabrahResponse = await fetch('https://api.nabrah.ai/api/ext/tts/generations', {
-            method: 'POST',
+  // 2. الحنجرة (Nabrah AI TTS)
+        const NABRAH_API_KEY = "nb_apbywMYSdHp9uFrYgZpI3Fj-GO4"
+        const VOICE_ID = "019babf2-c05f-732d-a080-e120c0491305"
+        const nabrahResponse = await fetch("https://api.nabrah.ai/api/ext/tts/generations", {
+            method: "POST",
             headers: {
-                'X-API-Key': process.env.NABRAH_API_KEY,
-                'Content-Type': 'application/json'
+                "X-API-Key": NABRAH_API_KEY,
+                "Content-Type": "application/json"
             },
             body: JSON.stringify({
                 model: "nabrah-tts",
                 input: aiTextResponse,
-                voice: "019babf2-c05f-732d-a080-e120c0491305",
+                voice: 019babf2-c05f-732d-a080-e120c0491305,
                 response_format: "mp3",
                 speed: 1.0
             })
         });
 
         if (!nabrahResponse.ok) {
-            throw new Error(`Nabrah API Error: ${nabrahResponse.status}`);
+            const errText = await nabrahResponse.text();
+            throw new Error(`Nabrah API Error: ${nabrahResponse.status} - ${errText}`);
         }
 
         // 3. محطة الإذاعة (تجهيز الصوت)
         const arrayBuffer = await nabrahResponse.arrayBuffer();
-        const audioBuffer = Buffer.from(arrayBuffer);
+        const audioBuffer = Buffer.from(arrayBuffer)
         const audioId = Date.now().toString(); 
         
         audioStore.set(audioId, audioBuffer); 
