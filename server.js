@@ -8,7 +8,6 @@ app.use(express.json());
 // السماح للسيرفر بقراءة الملفات من مجلد public
 app.use(express.static('public'));
 
-// مسار إضافي للطوارئ: في حال نسيان الملف خارج مجلد public
 app.get('/tts-output.mp3', (req, res) => {
     res.sendFile(path.join(__dirname, 'tts-output.mp3'));
 });
@@ -16,9 +15,9 @@ app.get('/tts-output.mp3', (req, res) => {
 // ذاكرة الصوت المؤقتة
 const audioStore = new Map();
 
-app.get('/', (req, res) => res.send('🚀 AI Voice Server with OpenRouter (GPT-4o-mini) & Nabrah is Live!'));
+app.get('/', (req, res) => res.send('🚀 AI Voice Server with OpenRouter (Brain) & Groq Canopy Labs (Voice) is Live!'));
 
-// مسار سحب الصوت لنبرة
+// مسار سحب الصوت 
 app.get('/api/audio/:id', (req, res) => {
     const id = req.params.id;
     if (audioStore.has(id)) {
@@ -74,20 +73,13 @@ app.post('/api/respond', async (req, res) => {
     console.log("🗣️ Customer said:", customerText);
 
     try {
-        const systemPrompt = `أنت موظف كاشير واستقبال سعودي ذكي ولطيف في مطعم اسمه "شاورما المعلم".
-
-قائمة الطعام (المنيو) والأسعار:
-- شاورما دجاج (عادي): 10 ريال
-- شاورما لحم (عادي): 12 ريال
-- وجبة شاورما عربي: 25 ريال
-- بطاطس مقلي: 5 ريال
-- مشروب غازي (بيبسي/سفن): 4 ريال
-
-تعليماتك الصارمة:
-1. الرد القصير: يجب أن يكون ردك مختصراً جداً (لا تزيد عن 15 إلى 20 كلمة) لأن هذه مكالمة هاتفية.
-2. اللهجة: تحدث بلهجة سعودية محترمة (استخدم: سم، أبشر، طال عمرك).
-3. الالتزام بالمنيو: إذا طلب العميل شيئاً غير موجود، اعتذر بلطف.
-4. تأكيد الطلب: أكد الطلب واحسب السعر الإجمالي بشكل سريع.`;
+        // تم تقصير الأوامر هنا لتسريع رد الذكاء الاصطناعي
+        const systemPrompt = `أنت موظف كاشير سعودي لطيف وسريع في مطعم "شاورما المعلم".
+المنيو: شاورما دجاج (10 ريال)، لحم (12 ريال)، عربي (25 ريال)، بطاطس (5 ريال)، مشروب (4 ريال).
+تعليمات صارمة:
+1. الرد قصير جداً ومباشر (أقصى حد 15 كلمة).
+2. استخدم لهجة سعودية (سم، أبشر، طال عمرك).
+3. أكد الطلب واحسب السعر الإجمالي بسرعة.`;
         
         // 1. العقل (استخدام OpenRouter مع نموذج GPT-4o-mini)
         const openRouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -113,31 +105,29 @@ app.post('/api/respond', async (req, res) => {
         const aiTextResponse = openRouterData.choices[0].message.content;
         console.log("🧠 AI Text (GPT-4o-mini):", aiTextResponse);
 
-        // 2. الحنجرة (إرسال النص إلى منصة نبرة)
-        const nabrahResponse = await fetch('https://api.nabrah.ai/api/ext/tts/generations', {
+        // 2. الحنجرة ⭐ (إرسال النص إلى منصة Groq - Canopy Labs Orpheus) ⭐
+        const groqResponse = await fetch('https://api.groq.com/openai/v1/audio/speech', {
             method: 'POST',
             headers: {
-                'X-API-Key': process.env.NABRAH_API_KEY,
+                'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: "phantom_v1", // إذا كان الخطأ هنا، سيخبرنا السجل الجديد بذلك
+                model: "canopylabs/orpheus-arabic-saudi",
                 input: aiTextResponse,
-                voice: "019babf2-c05f-732d-a080-e120c0491305",
+                voice: "fahad", // الأصوات المتاحة: fahad, sultan, lulwa, noura
                 response_format: "mp3"
-                // تم إزالة السرعة (speed) مؤقتاً لتجنب أخطاء التنسيق
             })
         });
 
-        // ⭐ التعديل الأهم: التقاط رسالة الخطأ الحقيقية من نبرة وطباعتها ⭐
-        if (!nabrahResponse.ok) {
-            const errorDetails = await nabrahResponse.text();
-            console.error("🔴 تفاصيل خطأ نبرة (Nabrah Error Details):", errorDetails);
-            throw new Error(`Nabrah API Error: ${nabrahResponse.status} - ${errorDetails}`);
+        if (!groqResponse.ok) {
+            const errorDetails = await groqResponse.text();
+            console.error("🔴 تفاصيل خطأ Groq:", errorDetails);
+            throw new Error(`Groq API Error: ${groqResponse.status} - ${errorDetails}`);
         }
 
-        // 3. محطة الإذاعة (تجهيز الصوت)
-        const arrayBuffer = await nabrahResponse.arrayBuffer();
+        // 3. محطة الإذاعة (تجهيز الصوت من Groq)
+        const arrayBuffer = await groqResponse.arrayBuffer();
         const audioBuffer = Buffer.from(arrayBuffer);
         const audioId = Date.now().toString(); 
         
@@ -145,7 +135,7 @@ app.post('/api/respond', async (req, res) => {
         setTimeout(() => audioStore.delete(audioId), 120000);
 
         const audioUrl = `${protocol}://${host}/api/audio/${audioId}`;
-        console.log("🔊 Audio generated, sending to Jambonz...");
+        console.log("🔊 Groq Audio generated, sending to Jambonz...");
 
         // 4. إرسال الرابط لـ Jambonz
         const jambonzResponse = [
@@ -166,7 +156,8 @@ app.post('/api/respond', async (req, res) => {
     } catch (error) {
         console.error("❌ System Error:", error.message);
         res.status(200).json([
-            { "verb": "play", "url": "https://cdn.pixabay.com/audio/2022/03/10/audio_c3e382f763.mp3" },
+            // رسالة خطأ لطيفة بدلاً من الموسيقى
+            { "verb": "say", "text": "المعذرة طال عمرك، صار فيه عطل بسيط بالسيستم، ممكن تعيد طلبك؟", "language": "ar-SA" },
             { "verb": "gather", "input": ["speech"], "actionHook": "/api/respond", "timeout": 5, "recognizer": defaultRecognizer }
         ]);
     }
