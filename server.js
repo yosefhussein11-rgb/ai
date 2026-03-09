@@ -116,7 +116,7 @@ app.post('/api/respond', async (req, res) => {
                 model: "canopylabs/orpheus-arabic-saudi",
                 input: aiTextResponse,
                 voice: "fahad", // الأصوات المتاحة: fahad, sultan, lulwa, noura
-                response_format: "mp3"
+                response_format: "wav"
             })
         });
 
