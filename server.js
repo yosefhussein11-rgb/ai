@@ -22,7 +22,8 @@ app.get('/api/audio/:id', (req, res) => {
     const id = req.params.id;
     if (audioStore.has(id)) {
         const audioBuffer = audioStore.get(id);
-        res.set('Content-Type', 'audio/mpeg');
+        // التعديل الأول: تغيير نوع الملف إلى wav
+        res.set('Content-Type', 'audio/wav');
         res.send(audioBuffer);
     } else {
         res.status(404).send('Audio not found');
@@ -116,7 +117,8 @@ app.post('/api/respond', async (req, res) => {
                 model: "canopylabs/orpheus-arabic-saudi",
                 input: aiTextResponse,
                 voice: "fahad", // الأصوات المتاحة: fahad, sultan, lulwa, noura
-                response_format: "wav"
+                // التعديل الثاني: تغيير الصيغة المطلوبة إلى wav
+                response_format: "wav" 
             })
         });
 
