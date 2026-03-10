@@ -142,14 +142,14 @@ app.post('/api/respond', async (req, res) => {
         // 4. إرسال الرابط لـ Jambonz
         const jambonzResponse = [
             {
-                "verb": "play",
-                "url": audioUrl
-            },
-            {
                 "verb": "gather",
                 "input": ["speech"],
                 "actionHook": "/api/respond",
                 "timeout": 5,
+                "bargein": true, // 👈 هذا هو السطر السحري الذي يسمح بالمقاطعة
+                "play": {
+                    "url": audioUrl
+                },
                 "recognizer": defaultRecognizer 
             }
         ];
